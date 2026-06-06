@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard | Raksha-Suraksha</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#020617;--bg2:#0a1628;--cyan:#00E5FF;--blue:#3B82F6;--orange:#EA580C;--green:#00FF88;--red:#FF4545;--text:#F8FAFC;--muted:#64748B;--border:rgba(0,229,255,0.18);--card-bg:rgba(15,23,42,0.92);--glow-c:0 0 20px rgba(0,229,255,0.55),0 0 60px rgba(0,229,255,0.2)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;overflow-x:hidden}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--cyan);border-radius:4px}
+
+/* Grid background */
+.grid-bg{position:fixed;inset:0;z-index:-2;pointer-events:none;background-image:linear-gradient(rgba(0,229,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.02) 1px,transparent 1px);background-size:55px 55px}
+
+/* Navbar */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:16px 5%;background:rgba(2,6,23,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,229,255,0.1)}
+.nav-brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:'Orbitron',monospace;font-weight:900;font-size:1.1rem;color:var(--cyan);text-shadow:0 0 15px rgba(0,229,255,0.6)}
+.nav-logo{width:36px;height:36px}
+.nav-center{display:flex;gap:28px;list-style:none}
+.nav-center a{font-family:'Space Mono',monospace;font-size:0.65rem;letter-spacing:2px;color:var(--muted);text-decoration:none;text-transform:uppercase;transition:color 0.3s}
+.nav-center a:hover{color:var(--cyan)}
+.nav-btn{font-family:'Orbitron',monospace;font-size:0.65rem;letter-spacing:2px;font-weight:700;background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:9px 20px;border-radius:3px;cursor:pointer;text-transform:uppercase;transition:0.3s}
+.nav-btn:hover{background:rgba(0,229,255,0.1);box-shadow:var(--glow-c)}
+
+/* Layout */
+.container{max-width:1400px;margin:0 auto;padding:80px 5% 40px}
+
+/* Section header */
+.section-header{margin-bottom:48px}
+.section-label{font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.section-label::before{content:'';width:24px;height:1px;background:var(--cyan)}
+.section-title{font-family:'Orbitron',monospace;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;margin-bottom:8px}
+
+/* Cards Grid */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:40px}
+.stat-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:26px;transition:0.35s;position:relative;overflow:hidden}
+.stat-card:hover{border-color:rgba(0,229,255,0.4);background:rgba(0,229,255,0.04);transform:translateY(-4px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0;transition:opacity 0.35s}
+.stat-card:hover::before{opacity:1}
+
+.card-label{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.card-value{font-family:'Orbitron',monospace;font-size:2.4rem;font-weight:900;color:var(--cyan);text-shadow:0 0 20px rgba(0,229,255,0.6);margin-bottom:8px;display:block}
+.card-sub{font-size:0.85rem;color:var(--muted);font-weight:500}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.status-live{background:var(--green);box-shadow:0 0 12px var(--green)}
+.status-warn{background:var(--orange);box-shadow:0 0 12px var(--orange)}
+.status-idle{background:var(--blue);box-shadow:0 0 12px var(--blue)}
+
+/* Data Table */
+.data-table{width:100%;border-collapse:collapse;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:40px}
+.data-table thead{background:rgba(0,229,255,0.05);border-bottom:1px solid var(--border)}
+.data-table th{padding:16px 18px;font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:2px;color:var(--cyan);text-align:left;text-transform:uppercase;font-weight:700}
+.data-table td{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.9rem;color:var(--text)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover{background:rgba(0,229,255,0.02)}
+
+/* Activity Log */
+.activity-log{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:28px;max-height:400px;overflow-y:auto}
+.log-entry{padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;gap:14px;font-size:0.9rem;font-family:'Space Mono',monospace;align-items:flex-start}
+.log-entry:last-child{border-bottom:none}
+.log-time{color:var(--cyan);white-space:nowrap;flex-shrink:0}
+.log-msg{color:var(--muted)}
+
+/* Footer */
+footer{border-top:1px solid rgba(255,255,255,0.05);padding:40px 5%;text-align:center;font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+
+/* Responsive */
+@media(max-width:768px){
+  .navbar{padding:14px 5%}
+  .nav-center{display:none}
+  .container{padding:70px 5% 40px}
+  .cards-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a class="nav-brand" href="index.html">
+    <svg class="nav-logo" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L3 6V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V6L12 2Z" fill="#3B82F6" opacity="0.9"/>
+      <path d="M12 5.5L6 7.5V11.5C6 15.2 8.5 18.6 12 19.5C15.5 18.6 18 15.2 18 11.5V7.5L12 5.5Z" fill="#EA580C"/>
+      <path d="M12 8.5L9.5 9.5V12C9.5 14 10.5 15.5 12 16C13.5 15.5 14.5 14 14.5 12V9.5L12 8.5Z" fill="white"/>
+    </svg>
+    RAKSHA·SURAKSHA
+  </a>
+  <ul class="nav-center">
+    <li><a href="dashboard.html">Dashboard</a></li>
+    <li><a href="map.html">Map</a></li>
+    <li><a href="master-control.html">Control</a></li>
+    <li><a href="message-control.html">Messages</a></li>
+  </ul>
+  <button class="nav-btn" onclick="logoutUser()">Logout</button>
+</nav>
+
+<!-- Main Content -->
+<div class="container">
+  <div class="section-header">
+    <div class="section-label">COMMAND CENTER</div>
+    <h1 class="section-title">Dashboard Overview</h1>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="cards-grid">
+    <div class="stat-card">
+      <div class="card-label">Connected Nodes</div>
+      <span class="card-value" id="nodeCount">0</span>
+      <div class="card-sub"><span class="status-dot status-live"></span>All Operational</div>
+    </div>
+    <div class="stat-card">
+      <div class="card-label">Active Agents</div>
+      <span class="card-value" id="agentCount">0</span>
+      <div class="card-sub"><span class="status-dot status-live"></span>Online</div>
+    </div>
+    <div class="stat-card">
+      <div class="card-label">Data Streams</div>
+      <span class="card-value" id="streamCount">0</span>
+      <div class="card-sub"><span class="status-dot status-live"></span>Active</div>
+    </div>
+    <div class="stat-card">
+      <div class="card-label">System Uptime</div>
+      <span class="card-value" id="uptime">99.9%</span>
+      <div class="card-sub"><span class="status-dot status-live"></span>Healthy</div>
+    </div>
+  </div>
+
+  <!-- Nodes Table -->
+  <div class="section-header" style="margin-top:60px">
+    <div class="section-label">NODE STATUS</div>
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Node ID</th>
+        <th>Status</th>
+        <th>Location</th>
+        <th>Battery</th>
+        <th>Last Sync</th>
+      </tr>
+    </thead>
+    <tbody id="nodesTable">
+      <tr>
+        <td colspan="5" style="text-align:center;color:var(--muted)">Loading node data...</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Activity Log -->
+  <div class="section-header">
+    <div class="section-label">ACTIVITY LOG</div>
+  </div>
+  <div class="activity-log">
+    <div id="activityLog">
+      <div class="log-entry">
+        <span class="log-time">14:35</span>
+        <span class="log-msg">System initialized - Dashboard loaded</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-time">14:35</span>
+        <span class="log-msg">Firebase connection established</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 RAKSHA·SURAKSHA TACTICAL COMMAND SYSTEM</footer>
+
+<script>
+const fbCfg={apiKey:"AIzaSyA7SlllDkivi27WF7ikTRjqb4GqRIoYxlI",authDomain:"sentinel-vault-fb4b7.firebaseapp.com",projectId:"sentinel-vault-fb4b7",storageBucket:"sentinel-vault-fb4b7.firebasestorage.app",messagingSenderId:"192301825793",appId:"1:192301825793:web:734530705f4084608fe500"};
+firebase.initializeApp(fbCfg);
+
+firebase.auth().onAuthStateChanged(user=>{
+  if(!user)window.location.href='index.html';
+  else initDashboard();
+});
+
+function logoutUser(){
+  firebase.auth().signOut().then(()=>window.location.href='index.html');
+}
+
+function initDashboard(){
+  // Simulate node data
+  const nodes=[
+    {id:'NODE-A',status:'ONLINE',location:'12.97N 77.59E',battery:'85%',time:'10:24'},
+    {id:'NODE-B',status:'ONLINE',location:'12.94N 77.61E',battery:'92%',time:'10:23'},
+    {id:'NODE-C',status:'LOW',location:'12.96N 77.58E',battery:'18%',time:'10:25'},
+    {id:'NODE-D',status:'ONLINE',location:'12.95N 77.60E',battery:'76%',time:'10:24'},
+  ];
+
+  document.getElementById('nodeCount').textContent=nodes.length;
+  document.getElementById('agentCount').textContent=nodes.filter(n=>n.status==='ONLINE').length;
+  document.getElementById('streamCount').textContent=nodes.length;
+
+  let html='';
+  nodes.forEach(n=>{
+    const statusDot=n.status==='ONLINE'?'status-live':n.status==='LOW'?'status-warn':'status-idle';
+    html+=`<tr>
+      <td><strong>${n.id}</strong></td>
+      <td><span class="status-dot ${statusDot}"></span>${n.status}</td>
+      <td>${n.location}</td>
+      <td>${n.battery}</td>
+      <td>${n.time}</td>
+    </tr>`;
+  });
+  document.getElementById('nodesTable').innerHTML=html;
+
+  // Log entry
+  addLog('Dashboard rendered with '+nodes.length+' nodes');
+  addLog('All nodes reporting status successfully');
+}
+
+function addLog(msg){
+  const log=document.getElementById('activityLog');
+  const time=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const entry=document.createElement('div');
+  entry.className='log-entry';
+  entry.innerHTML=`<span class="log-time">${time}</span><span class="log-msg">${msg}</span>`;
+  log.insertBefore(entry,log.firstChild);
+  if(log.children.length>20)log.removeChild(log.lastChild);
+}
+</script>
+
+</body>
+</html>
